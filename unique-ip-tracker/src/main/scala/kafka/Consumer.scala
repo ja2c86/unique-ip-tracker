@@ -42,6 +42,9 @@ object Consumer {
           .map { partitionStream =>
             partitionStream.evalMap { committable =>
               processRecord(committable.record)
+                .recoverWith { error =>
+                  logger.error(s"Error processing record: $error")
+                }
             }
           }
           .parJoinUnbounded

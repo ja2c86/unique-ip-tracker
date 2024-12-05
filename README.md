@@ -82,3 +82,31 @@ If the load increases some actions can be taken:
   - configuring sharding for distributing the database records
   - tuning the kafka topic partitions (ie. one for region)
   - offering IP addresses counts by region and use a composed database index (region + ip address)  
+
+### Troubleshooting
+
+For diagnosis an verification the following commands could be useful:
+
+1. Connect to kafka container:
+
+```
+$ docker exec -it kafka bash
+```
+
+2. Verify the available topics:
+
+```
+$ kafka-topics --bootstrap-server localhost:29092 --list
+```
+
+3. Verify the topic configuration:
+
+```
+$ kafka-topics --bootstrap-server localhost:29092 --topic ip_tracker_topic --describe
+```
+
+4. Verify the topic consumers and its assigned partitions:
+
+```
+$ kafka-consumer-groups --bootstrap-server localhost:9092 --group ip_tracker_group --describe
+```
