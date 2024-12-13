@@ -4,7 +4,7 @@ import cats.effect.kernel.Async
 import cats.syntax.all.*
 import fs2.kafka.{AutoOffsetReset, ConsumerRecord, ConsumerSettings, Deserializer, KafkaConsumer}
 import io.circe.jawn.decodeByteArray
-import model.DeviceEvent
+import model.{Config, DeviceEvent}
 import mongo.Repository
 import org.typelevel.log4cats.LoggerFactory
 import util.TimestampValidator
@@ -14,13 +14,9 @@ trait Consumer[F[_]] {
 }
 
 object Consumer {
-  def impl[F[_]: Async: LoggerFactory](repository: Repository[F]): Consumer[F] =
+  def impl[F[_]: Async: LoggerFactory](repository: Repository[F], config: Config): Consumer[F] =
     new Consumer[F] {
       val logger = LoggerFactory[F].getLogger
-
-      val BOOTSTRAP_SERVERS = "kafka:29092"
-      val TOPIC = "ip_tracker_topic"
-      val GROUP_ID = "ip_tracker_group"
 
       val valueDeserializer: Deserializer[F, DeviceEvent] =
         Deserializer.lift[F, DeviceEvent](byteArray => decodeByteArray[DeviceEvent](byteArray).liftTo[F])
@@ -30,14 +26,14 @@ object Consumer {
           keyDeserializer = Deserializer[F, String],
           valueDeserializer = valueDeserializer
         )
-          .withAutoOffsetReset(AutoOffsetReset.Earliest)
-          .withBootstrapServers(BOOTSTRAP_SERVERS)
-          .withGroupId(GROUP_ID)
+        .withAutoOffsetReset(AutoOffsetReset.Earliest)
+        .withBootstrapServers(config.kafkaConfig.bootstrapServers)
+        .withGroupId(config.kafkaConfig.groupId)
 
       def consume(): fs2.Stream[F, Unit] = {
         KafkaConsumer
           .stream(consumerSettings)
-          .subscribeTo(TOPIC)
+          .subscribeTo(config.kafkaConfig.topic)
           .partitionedRecords
           .map { partitionStream =>
             partitionStream.evalMap { committable =>

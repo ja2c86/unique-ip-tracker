@@ -65,6 +65,16 @@ $ curl http://localhost:8081/count
 $ curl http://localhost:8082/count
 ```
 
+### Tests
+
+For executing the application's unit tests:
+
+```
+$ cd unique-ip-tracker
+$ sbt clean compile
+$ sbt test
+```
+
 ### Scaling Considerations
 
 The current implementation is supported on Mongo instead a in-memory alternative (ie. Redis) to an easier scaling.

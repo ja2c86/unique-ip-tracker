@@ -3,7 +3,7 @@ package mongo
 import cats.effect.kernel.Async
 import cats.syntax.all.*
 import io.circe.generic.auto.*
-import model.TrackedIp
+import model.{Config, TrackedIp}
 import mongo4cats.circe.*
 import mongo4cats.client.MongoClient
 import mongo4cats.codecs.MongoCodecProvider
@@ -20,17 +20,14 @@ trait Repository[F[_]] {
 }
 
 object Repository {
-  def impl[F[_]: Async: LoggerFactory](client: MongoClient[F]): Repository[F] =
+  def impl[F[_]: Async: LoggerFactory](client: MongoClient[F], config: Config): Repository[F] =
     new Repository[F] {
       val logger = LoggerFactory[F].getLogger
 
-      val DATABASE = "unique_ip_tracker"
-      val COLLECTION = "tracked_ips"
-
       private def getCollection: F[MongoCollection[F, TrackedIp]] =
         for {
-          database <- client.getDatabase(DATABASE)
-          collection <- database.getCollectionWithCodec[TrackedIp](COLLECTION)
+          database <- client.getDatabase(config.mongoConfig.database)
+          collection <- database.getCollectionWithCodec[TrackedIp](config.mongoConfig.collection)
           _ <- collection.createIndex(Index.ascending("ipAddress"))
         } yield collection
 
